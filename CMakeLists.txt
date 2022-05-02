@@ -5,6 +5,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 
+option(OPENGL_WRAPPERS "Enables C++ wrappers" OFF)
+
+if (OPENGL_WRAPPERS)
+    add_definitions(-DOPENGL_WRAPPERS)
+endif()
+
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
     message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
     file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
