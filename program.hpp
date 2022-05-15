@@ -52,6 +52,15 @@ class Program : public GLHandle {
         glUseProgram(handle_);
     }
 
+    GLuint getUniformLocation(const std::string& symbol) {
+      return glGetUniformLocation(handle_, symbol.c_str());
+    }
+
+    void sendUniform1f(const std::string& symbol, float value) {
+      GLuint offsetLoc = glGetUniformLocation(handle_, symbol.c_str());
+      glProgramUniform1f(handle_, offsetLoc, value);
+    }
+
  private:
     std::vector<Shader> shaders_;
 };
