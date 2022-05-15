@@ -20,7 +20,6 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-set(CONAN_COMMAND conan)
 conan_cmake_autodetect(settings)
 conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_LIST_DIR}
                     BUILD missing
@@ -30,5 +29,5 @@ conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_LIST_DIR}
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
-add_executable(LearnOpenGLStarter main.cpp)
-conan_target_link_libraries(LearnOpenGLStarter)
+add_executable(${PROJECT_NAME} main.cpp)
+conan_target_link_libraries(${PROJECT_NAME})

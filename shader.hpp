@@ -12,7 +12,7 @@ extern "C" {
 
 #include "glhandle.hpp"
 #include "path.hpp"
-#include "opengl.hpp"
+#include "opengl/opengl.hpp"
 
 namespace opengl {
 
