@@ -12,6 +12,8 @@ extern "C" {
 
 #include "glhandle.hpp"
 #include "shader.hpp"
+#include "opengl/opengl.hpp"
+#include "opengl/log.hpp"
 
 namespace opengl {
 
@@ -37,6 +39,13 @@ class Program : public GLHandle {
 
     void link() {
         glLinkProgram(handle_);
+        opengl::checkOpenGLError();
+        GLint linked;
+        glGetProgramiv(handle_, GL_LINK_STATUS, &linked);
+        if (linked != 1) {
+          std::cout << "linking failed" << std::endl;
+          opengl::log::printProgramLog(handle_);
+        }
     }
 
     void use() {

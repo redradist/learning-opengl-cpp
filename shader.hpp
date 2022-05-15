@@ -13,6 +13,7 @@ extern "C" {
 #include "glhandle.hpp"
 #include "path.hpp"
 #include "opengl/opengl.hpp"
+#include "opengl/log.hpp"
 
 namespace opengl {
 
@@ -36,6 +37,13 @@ class Shader : public GLHandle {
         const auto raw_str = content.c_str();
         glShaderSource(handle_, 1, &raw_str, nullptr);
         glCompileShader(handle_);
+        opengl::checkOpenGLError();
+        GLint compiled;
+        glGetShaderiv(handle_, GL_COMPILE_STATUS, &compiled);
+        if (compiled != 1) {
+          std::cout << "vertex compilation failed" << std::endl;
+          opengl::log::printShaderLog(handle_);
+        }
     }
 
     Shader(const int shaderId, const std::string &shaderSource) {
@@ -43,6 +51,13 @@ class Shader : public GLHandle {
         const auto raw_str = shaderSource.c_str();
         glShaderSource(handle_, 1, &raw_str, nullptr);
         glCompileShader(handle_);
+        opengl::checkOpenGLError();
+        GLint compiled;
+        glGetShaderiv(handle_, GL_COMPILE_STATUS, &compiled);
+        if (compiled != 1) {
+          std::cout << "vertex compilation failed" << std::endl;
+          opengl::log::printShaderLog(handle_);
+        }
     }
 
     Shader(Shader &&other) = default;
