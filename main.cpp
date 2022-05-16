@@ -74,6 +74,7 @@ void init(GLFWwindow* window) {
 
 float x = 0.0f; // location of triangle on x axis
 float inc = 0.01f; // offset for moving the triangle
+double lastFrameTime = 0.0f;
 
 void display(GLFWwindow* window, double currentTime) {
   glClear(GL_DEPTH_BUFFER_BIT);
@@ -82,7 +83,10 @@ void display(GLFWwindow* window, double currentTime) {
 
   glUseProgram(renderingProgram);
 
-  x += inc; // move the triangle along x axis
+  const double timePassed = currentTime - lastFrameTime;
+  lastFrameTime = currentTime;
+
+  x += 100.0f * inc * timePassed; // move the triangle along x axis
   if (x > 1.0f) inc = -0.01f; // switch to moving the triangle to the left
   if (x < -1.0f) inc = 0.01f; // switch to moving the triangle to the right
   GLuint offsetLoc = glGetUniformLocation(renderingProgram, "offset"); // get ptr to "offset"
@@ -146,6 +150,7 @@ void init(GLFWwindow* window) {
 
 float x = 0.0f; // location of triangle on x axis
 float inc = 0.01f; // offset for moving the triangle
+double lastFrameTime = 0.0f;
 
 void display(GLFWwindow* window, double currentTime) {
   glClear(GL_DEPTH_BUFFER_BIT);
@@ -155,7 +160,10 @@ void display(GLFWwindow* window, double currentTime) {
   auto& program = renderingProgram.value();
   program.use();
 
-  x += inc; // move the triangle along x axis
+  const double timePassed = currentTime - lastFrameTime;
+  lastFrameTime = currentTime;
+
+  x += 100.0f * inc * timePassed; // move the triangle along x axis
   if (x > 1.0f) inc = -0.01f; // switch to moving the triangle to the left
   if (x < -1.0f) inc = 0.01f; // switch to moving the triangle to the right
   program.sendUniform1f("offset", x); // send value in "x" to "offset"
