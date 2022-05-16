@@ -39,9 +39,19 @@ void init(GLFWwindow* window) {
   glBindVertexArray(vao[0]);
 }
 
+float point_size = 1.0f;
+float inc = 0.1f;
+
 void display(GLFWwindow* window, double currentTime) {
+  glClear(GL_DEPTH_BUFFER_BIT);
+  glClearColor(0.0, 0.0, 0.0, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT); // clear the background to black, each time
+
   glUseProgram(renderingProgram);
-  glPointSize(30.0f);
+  point_size += inc;
+  if (point_size > 100.0f) inc = -0.1f;
+  if (point_size <= 1.0f) inc = 0.1f;
+  glPointSize(point_size);
   glDrawArrays(GL_POINTS, 0, 1);
 }
 
@@ -93,14 +103,25 @@ opengl::Program createShaderProgram() {
   return std::move(program);
 }
 
+float point_size = 1.0f;
+float inc = 0.1f;
+
 void init(GLFWwindow* window) {
   renderingProgram = createShaderProgram();
   vao = opengl::VertexArray<kNumVAOs>{};
 }
 
 void display(GLFWwindow* window, double currentTime) {
+  glClear(GL_DEPTH_BUFFER_BIT);
+  glClearColor(0.0, 0.0, 0.0, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT); // clear the background to black, each time
+
   auto& program = renderingProgram.value();
   program.use();
+  point_size += inc;
+  if (point_size > 100.0f) inc = -0.1f;
+  if (point_size <= 1.0f) inc = 0.1f;
+  glPointSize(point_size);
   glDrawArrays(GL_POINTS, 0, 1);
 }
 
@@ -115,7 +136,7 @@ int main() {
 
   if (glewInit() != GLEW_OK) { exit(EXIT_FAILURE); }
 
-  glfwSwapInterval(10);
+  glfwSwapInterval(1);
   init(window);
 
   while (!glfwWindowShouldClose(window)) {
