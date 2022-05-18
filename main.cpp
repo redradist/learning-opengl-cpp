@@ -32,12 +32,16 @@ GLuint createShaderProgram() {
   GLint linked;
 
   GLuint vShader = glCreateShader(GL_VERTEX_SHADER);
+  GLuint vtShader = glCreateShader(GL_VERTEX_SHADER);
   GLuint fShader = glCreateShader(GL_FRAGMENT_SHADER);
   string vertShaderStr = readShaderSource("../../shaders/vertex.glsl");
+  string vertTranShaderStr = readShaderSource("../../shaders/transform.glsl");
   string fragShaderStr = readShaderSource("../../shaders/fragment.glsl");
   const char *vshaderSource = vertShaderStr.c_str();
+  const char *vertTranSource = vertTranShaderStr.c_str();
   const char *fshaderSource = fragShaderStr.c_str();
   glShaderSource(vShader, 1, &vshaderSource, NULL);
+  glShaderSource(vtShader, 1, &vertTranSource, NULL);
   glShaderSource(fShader, 1, &fshaderSource, NULL);
   glCompileShader(vShader);
   opengl::checkOpenGLError();
@@ -55,6 +59,7 @@ GLuint createShaderProgram() {
   }
   GLuint vfProgram = glCreateProgram();
   glAttachShader(vfProgram, vShader);
+  glAttachShader(vfProgram, vtShader);
   glAttachShader(vfProgram, fShader);
   glLinkProgram(vfProgram);
   opengl::checkOpenGLError();
@@ -131,9 +136,11 @@ std::optional<opengl::VertexArray<kNumVAOs>> vao;
 
 opengl::Program createShaderProgram() {
   opengl::Shader vShader(GL_VERTEX_SHADER, opengl::Path::from("../../shaders/vertex.glsl"));
+  opengl::Shader vTranShader(GL_VERTEX_SHADER, opengl::Path::from("../../shaders/transform.glsl"));
   opengl::Shader fShader(GL_FRAGMENT_SHADER, opengl::Path::from("../../shaders/fragment.glsl"));
   opengl::Program program;
   program.attach(std::move(vShader));
+  program.attach(std::move(vTranShader));
   program.attach(std::move(fShader));
   program.link();
   return std::move(program);
