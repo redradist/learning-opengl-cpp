@@ -1,7 +1,3 @@
-//
-// Created by RedRa on 04.05.2022.
-//
-
 #ifndef LEARNOPENGL__OPENGL_LOG_HPP_
 #define LEARNOPENGL__OPENGL_LOG_HPP_
 

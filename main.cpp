@@ -1,124 +1,105 @@
 #ifndef OPENGL_WRAPPERS
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <string>
-#include <fstream>
-#include "opengl/opengl.hpp"
-#include "opengl/log.hpp"
+#include <cmath>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include "opengl/utils.hpp"
 
 using namespace std;
 
 #define numVAOs 1
+#define numVBOs 2
+
+float cameraX, cameraY, cameraZ;
+float cubeLocX, cubeLocY, cubeLocZ;
 
 GLuint renderingProgram;
+
 GLuint vao[numVAOs];
+GLuint vbo[numVBOs];
 
-std::string readShaderSource(const char *filePath) {
-  std::string content;
-  std::ifstream fileStream(filePath, ios::in);
-  std::string line = "";
-  while (!fileStream.eof()) {
-    std::getline(fileStream, line);
-    content.append(line + "\n");
-  }
-  fileStream.close();
-  return content;
-}
+// allocate variables used in display() function, so that they won’t need to be allocated during rendering
+GLuint mvLoc, projLoc;
+int width, height;
+float aspect;
 
-GLuint createShaderProgram() {
-  GLint vertCompiled;
-  GLint fragCompiled;
-  GLint linked;
+glm::mat4 pMat, vMat, mMat, mvMat;
 
-  GLuint vShader = glCreateShader(GL_VERTEX_SHADER);
-  GLuint vtShader = glCreateShader(GL_VERTEX_SHADER);
-  GLuint fShader = glCreateShader(GL_FRAGMENT_SHADER);
-  string vertShaderStr = readShaderSource("../../shaders/vertex.glsl");
-  string vertTranShaderStr = readShaderSource("../../shaders/transform.glsl");
-  string fragShaderStr = readShaderSource("../../shaders/fragment.glsl");
-  const char *vshaderSource = vertShaderStr.c_str();
-  const char *vertTranSource = vertTranShaderStr.c_str();
-  const char *fshaderSource = fragShaderStr.c_str();
-  glShaderSource(vShader, 1, &vshaderSource, NULL);
-  glShaderSource(vtShader, 1, &vertTranSource, NULL);
-  glShaderSource(fShader, 1, &fshaderSource, NULL);
-  glCompileShader(vShader);
-  opengl::checkOpenGLError();
-  glGetShaderiv(vShader, GL_COMPILE_STATUS, &vertCompiled);
-  if (vertCompiled != 1) {
-    cout << "vertex compilation failed" << endl;
-    opengl::log::printShaderLog(vShader);
-  }
-  glCompileShader(fShader);
-  opengl::checkOpenGLError();
-  glGetShaderiv(fShader, GL_COMPILE_STATUS, &fragCompiled);
-  if (fragCompiled != 1) {
-    cout << "fragment compilation failed" << endl;
-    opengl::log::printShaderLog(fShader);
-  }
-  GLuint vfProgram = glCreateProgram();
-  glAttachShader(vfProgram, vShader);
-  glAttachShader(vfProgram, vtShader);
-  glAttachShader(vfProgram, fShader);
-  glLinkProgram(vfProgram);
-  opengl::checkOpenGLError();
-  glGetProgramiv(vfProgram, GL_LINK_STATUS, &linked);
-  if (linked != 1) {
-    cout << "linking failed" << endl;
-    opengl::log::printProgramLog(vfProgram);
-  }
-  return vfProgram;
+void setupVertices() { // 36 vertices, 12 triangles, makes 2x2x2 cube placed at origin
+  float vertexPositions[108] = {
+      -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f,
+      1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,
+      1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
+      -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f
+  };
+  glGenVertexArrays(1, vao);
+  glBindVertexArray(vao[0]);
+  glGenBuffers(numVBOs, vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
 }
 
 void init(GLFWwindow* window) {
-  renderingProgram = createShaderProgram();
-  glGenVertexArrays(numVAOs, vao);
-  glBindVertexArray(vao[0]);
+  renderingProgram = utils::createShaderProgram("../../shaders/vertex.glsl",
+                                                "../../shaders/fragment.glsl");
+  cameraX = 0.0f; cameraY = 0.0f; cameraZ = 8.0f;
+  cubeLocX = 0.0f; cubeLocY = -2.0f; cubeLocZ = 0.0f; // shift down Y to reveal perspective
+  setupVertices();
 }
-
-float x = 0.0f; // location of triangle on x axis
-float inc = 0.01f; // offset for moving the triangle
 
 void display(GLFWwindow* window, double currentTime) {
   glClear(GL_DEPTH_BUFFER_BIT);
-  glClearColor(0.0, 0.0, 0.0, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT); // clear the background to black, each time
-
   glUseProgram(renderingProgram);
-
-  x += inc; // move the triangle along x axis
-  if (x > 1.0f) inc = -0.01f; // switch to moving the triangle to the left
-  if (x < -1.0f) inc = 0.01f; // switch to moving the triangle to the right
-  GLuint offsetLoc = glGetUniformLocation(renderingProgram, "offset"); // get ptr to "offset"
-  glProgramUniform1f(renderingProgram, offsetLoc, x); // send value in "x" to "offset"
-
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  // get the uniform variables for the MV and projection matrices
+  mvLoc = glGetUniformLocation(renderingProgram, "mv_matrix");
+  projLoc = glGetUniformLocation(renderingProgram, "proj_matrix");
+  // build perspective matrix
+  glfwGetFramebufferSize(window, &width, &height);
+  aspect = static_cast<float>(width) / static_cast<float>(height);
+  pMat = glm::perspective(1.0472f, aspect, 0.1f, 1000.0f); // 1.0472 radians = 60 degrees
+  // build view matrix, model matrix, and model-view matrix
+  vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  mMat = glm::translate(glm::mat4(1.0f), glm::vec3(cubeLocX, cubeLocY, cubeLocZ));
+  mvMat = vMat * mMat;
+  // copy perspective and MV matrices to corresponding uniform variables
+  glUniformMatrix4fv(mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+  glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pMat));
+  // associate VBO with the corresponding vertex attribute in the vertex shader
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+  // adjust OpenGL settings and draw model
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-int main() {
+int main() { // main() is unchanged from before
   if (!glfwInit()) { exit(EXIT_FAILURE); }
-
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-
-  GLFWwindow* window = glfwCreateWindow(600, 600, "Chapter2 - program1", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(600, 600, "Chapter 4 - program 1", NULL, NULL);
   glfwMakeContextCurrent(window);
-
   if (glewInit() != GLEW_OK) { exit(EXIT_FAILURE); }
-
   glfwSwapInterval(1);
   init(window);
-
   while (!glfwWindowShouldClose(window)) {
     display(window, glfwGetTime());
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
-
   glfwDestroyWindow(window);
   glfwTerminate();
-
   exit(EXIT_SUCCESS);
 }
 #else
