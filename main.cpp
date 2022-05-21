@@ -98,7 +98,7 @@ void display(GLFWwindow* window, double currentTime) {
   // adjust OpenGL settings and draw model
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
-  glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 24);
+  glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 100000);
 }
 
 int main() { // main() is unchanged from before
@@ -226,7 +226,7 @@ void display(GLFWwindow* window, double currentTime) {
   // adjust OpenGL settings and draw model
   opengl::enable(GL_DEPTH_TEST);
   opengl::depthFunc(GL_LEQUAL);
-  opengl::drawInstancedTriangles(0, 36, 24);
+  opengl::drawInstancedTriangles(0, 36, 100000);
 }
 
 int main() {

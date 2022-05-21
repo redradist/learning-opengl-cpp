@@ -14,9 +14,9 @@ mat4 buildRotateZ(float rad);
 
 void main(void) {
     float i = gl_InstanceID + tf; // value based on time factor, but different for each cube instance
-    float a = sin(1.0 * i) * 8.0; // these are the x, y, and z components for the translation, below
-    float b = sin(3.0 * i) * 8.0;
-    float c = sin(4.0 * i) * 8.0;
+    float a = sin(203.0 * i/8000.0) * 403.0;
+    float b = cos(301.0 * i/4001.0) * 401.0;
+    float c = sin(400.0 * i/6003.0) * 405.0;
 
     // build the rotation and translation matrices to be applied to this cube’s model matrix
     mat4 localRotX = buildRotateX(1 * i);
