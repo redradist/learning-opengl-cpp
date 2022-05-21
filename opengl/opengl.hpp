@@ -57,6 +57,11 @@ void drawTriangles(GLint first, GLsizei count) {
   glDrawArrays(GL_TRIANGLES, first, count);
 }
 
+inline
+void drawInstancedTriangles(GLint first, GLsizei count, GLsizei instanceCount) {
+  glDrawArraysInstanced(GL_TRIANGLES, first, count, instanceCount);
+}
+
 }
 
 #endif //LEARNOPENGLSTARTER__OPENGL_HPP_

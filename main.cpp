@@ -22,6 +22,7 @@ GLuint vbo[numVBOs];
 
 // allocate variables used in display() function, so that they won’t need to be allocated during rendering
 GLuint mvLoc, projLoc;
+GLuint vLoc, tfLoc;
 int width, height;
 float aspect;
 
@@ -51,7 +52,8 @@ void setupVertices() { // 36 vertices, 12 triangles, makes 2x2x2 cube placed at 
 
 void init(GLFWwindow* window) {
   renderingProgram = utils::createShaderProgram("../../shaders/vertex.glsl",
-                                                "../../shaders/fragment.glsl");
+                                                "../../shaders/fragment.glsl",
+                                                "../../shaders/transform.glsl");
   cameraX = 0.0f; cameraY = 0.0f; cameraZ = 30.0f;
   cubeLocX = 0.0f; cubeLocY = -2.0f; cubeLocZ = 0.0f; // shift down Y to reveal perspective
   setupVertices();
@@ -65,6 +67,8 @@ void display(GLFWwindow* window, double currentTime) {
   // get the uniform variables for the MV and projection matrices
   mvLoc = glGetUniformLocation(renderingProgram, "mv_matrix");
   projLoc = glGetUniformLocation(renderingProgram, "proj_matrix");
+  vLoc = glGetUniformLocation(renderingProgram, "v_matrix");
+  tfLoc = glGetUniformLocation(renderingProgram, "tf");
 
   // build perspective matrix
   glfwGetFramebufferSize(window, &width, &height);
@@ -73,34 +77,28 @@ void display(GLFWwindow* window, double currentTime) {
 
   // build view matrix, model matrix, and model-view matrix
   vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
-  for (int i = 0; i < 24; ++i) {
-    double tf = currentTime + i; // tf == "time factor", declared as type float
-    // cube model matrix
-    glm::mat4 tMat, rMat;
-    tMat = glm::translate(glm::mat4(1.0f),
-                          glm::vec3(sin(.35f * tf) * 8.0f,
-                                    cos(.52f * tf) * 8.0f,
-                                    sin(.70f * tf) * 8.0f));
-    rMat = glm::rotate(glm::mat4(1.0f), 1.75f * (float) currentTime, glm::vec3(0.0f, 1.0f, 0.0f));
-    rMat = glm::rotate(rMat, 1.75f * (float) currentTime, glm::vec3(1.0f, 0.0f, 0.0f));
-    rMat = glm::rotate(rMat, 1.75f * (float) currentTime, glm::vec3(0.0f, 0.0f, 1.0f));
-    mMat = tMat * rMat;
-    mvMat = vMat * mMat;
+  // cube model matrix
+  mMat = glm::translate(glm::mat4(1.0f), glm::vec3(cubeLocX, cubeLocY, cubeLocZ));
+  mvMat = vMat * mMat;
 
-    // copy perspective and MV matrices to corresponding uniform variables
-    glUniformMatrix4fv(mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pMat));
+  // copy perspective and MV matrices to corresponding uniform variables
+  glUniformMatrix4fv(mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+  glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(pMat));
 
-    // associate VBO with the corresponding vertex attribute in the vertex shader
-    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
+  // computations that build (and transform) mMat have been moved to the vertex shader.
+  // there is no longer any need to build an MV matrix in the C++ application.
+  glUniformMatrix4fv(vLoc, 1, GL_FALSE, glm::value_ptr(vMat)); // shader needs the V matrix
+  glUniform1f(tfLoc, static_cast<float>(currentTime));
 
-    // adjust OpenGL settings and draw model
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-  }
+  // associate VBO with the corresponding vertex attribute in the vertex shader
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  // adjust OpenGL settings and draw model
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 24);
 }
 
 int main() { // main() is unchanged from before
@@ -207,35 +205,28 @@ void display(GLFWwindow* window, double currentTime) {
 
   // build view matrix, model matrix, and model-view matrix
   vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  // cube model matrix
+  mMat = glm::translate(glm::mat4(1.0f), glm::vec3(cubeLocX, cubeLocY, cubeLocZ));
+  mvMat = vMat * mMat;
 
-  for (int i = 0; i < 24; ++i) {
-    double tf = currentTime + i; // tf == "time factor", declared as type float
-    // cube model matrix
-    glm::mat4 tMat, rMat;
-    tMat = glm::translate(glm::mat4(1.0f),
-                          glm::vec3(sin(.35f * tf) * 8.0f,
-                                    cos(.52f * tf) * 8.0f,
-                                    sin(.70f * tf) * 8.0f));
-    rMat = glm::rotate(glm::mat4(1.0f), 1.75f * (float) currentTime, glm::vec3(0.0f, 1.0f, 0.0f));
-    rMat = glm::rotate(rMat, 1.75f * (float) currentTime, glm::vec3(1.0f, 0.0f, 0.0f));
-    rMat = glm::rotate(rMat, 1.75f * (float) currentTime, glm::vec3(0.0f, 0.0f, 1.0f));
-    mMat = tMat * rMat;
-    mvMat = vMat * mMat;
+  // copy perspective and MV matrices to corresponding uniform variables
+  program.sendUniformMatrix4fv("mv_matrix", mvMat);
+  program.sendUniformMatrix4fv("proj_matrix", pMat);
 
-    // copy perspective and MV matrices to corresponding uniform variables
-    program.sendUniformMatrix4fv("mv_matrix", mvMat);
-    program.sendUniformMatrix4fv("proj_matrix", pMat);
+  // computations that build (and transform) mMat have been moved to the vertex shader.
+  // there is no longer any need to build an MV matrix in the C++ application.
+  program.sendUniformMatrix4fv("v_matrix", vMat); // shader needs the V matrix
+  program.sendUniform1f("tf", currentTime);
 
-    // associate VBO with the corresponding vertex attribute in the vertex shader
-    vbo.value().bindVertexBuffer(0);
-    opengl::vertexAttrib(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    opengl::enableVertexAttrib(0);
+  // associate VBO with the corresponding vertex attribute in the vertex shader
+  vbo.value().bindVertexBuffer(0);
+  opengl::vertexAttrib(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  opengl::enableVertexAttrib(0);
 
-    // adjust OpenGL settings and draw model
-    opengl::enable(GL_DEPTH_TEST);
-    opengl::depthFunc(GL_LEQUAL);
-    opengl::drawTriangles(0, 36);
-  }
+  // adjust OpenGL settings and draw model
+  opengl::enable(GL_DEPTH_TEST);
+  opengl::depthFunc(GL_LEQUAL);
+  opengl::drawInstancedTriangles(0, 36, 24);
 }
 
 int main() {
