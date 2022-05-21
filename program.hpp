@@ -61,6 +61,11 @@ class Program : public GLHandle {
       glProgramUniform1f(handle_, offsetLoc, value);
     }
 
+    void sendUniformMatrix4fv(const std::string& symbol, glm::mat4 value) {
+      GLuint offsetLoc = glGetUniformLocation(handle_, symbol.c_str());
+      glUniformMatrix4fv(offsetLoc, 1, GL_FALSE, glm::value_ptr(value));
+    }
+
  private:
     std::vector<Shader> shaders_;
 };

@@ -105,15 +105,53 @@ int main() { // main() is unchanged from before
 #else
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <optional>
 #include <array>
 
 #include "program.hpp"
 #include "vertex_array.hpp"
+#include "vertex_buffer.hpp"
 
 std::optional<opengl::Program> renderingProgram;
 constexpr size_t kNumVAOs = 1;
-std::optional<opengl::VertexArray<kNumVAOs>> vao;
+constexpr size_t kNumVBOs = 2;
+std::optional<opengl::VertexArrayObjects<kNumVAOs>> vao;
+std::optional<opengl::VertexBufferObjects<kNumVBOs>> vbo;
+
+float cameraX, cameraY, cameraZ;
+float cubeLocX, cubeLocY, cubeLocZ;
+
+// allocate variables used in display() function, so that they won’t need to be allocated during rendering
+GLuint mvLoc, projLoc;
+int width, height;
+float aspect;
+
+glm::mat4 pMat, vMat, mMat, mvMat;
+
+void setupVertices() { // 36 vertices, 12 triangles, makes 2x2x2 cube placed at origin
+  float vertexPositions[108] = {
+      -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f,
+      1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,
+      1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f,
+      1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
+      -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f
+  };
+  vao = opengl::VertexArrayObjects<kNumVAOs>{};
+  vbo = opengl::VertexBufferObjects<kNumVBOs>{};
+  vao.value().bindVertexArray(0);
+  vbo.value().bindVertexBuffer(0);
+  vbo.value().copyData(vertexPositions, sizeof(vertexPositions), opengl::BufferDraw::Static);
+}
 
 opengl::Program createShaderProgram() {
   opengl::Shader vShader(GL_VERTEX_SHADER, opengl::Path::from("../../shaders/vertex.glsl"));
@@ -129,7 +167,9 @@ opengl::Program createShaderProgram() {
 
 void init(GLFWwindow* window) {
   renderingProgram = createShaderProgram();
-  vao = opengl::VertexArray<kNumVAOs>{};
+  cameraX = 0.0f; cameraY = 0.0f; cameraZ = 8.0f;
+  cubeLocX = 0.0f; cubeLocY = -2.0f; cubeLocZ = 0.0f; // shift down Y to reveal perspective
+  setupVertices();
 }
 
 float x = 0.0f; // location of triangle on x axis
@@ -137,18 +177,32 @@ float inc = 0.01f; // offset for moving the triangle
 
 void display(GLFWwindow* window, double currentTime) {
   glClear(GL_DEPTH_BUFFER_BIT);
-  glClearColor(0.0, 0.0, 0.0, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT); // clear the background to black, each time
-
   auto& program = renderingProgram.value();
   program.use();
 
-  x += inc; // move the triangle along x axis
-  if (x > 1.0f) inc = -0.01f; // switch to moving the triangle to the left
-  if (x < -1.0f) inc = 0.01f; // switch to moving the triangle to the right
-  program.sendUniform1f("offset", x); // send value in "x" to "offset"
+  // get the uniform variables for the MV and projection matrices
+  glfwGetFramebufferSize(window, &width, &height);
+  aspect = static_cast<float>(width) / static_cast<float>(height);
+  pMat = glm::perspective(1.0472f, aspect, 0.1f, 1000.0f); // 1.0472 radians = 60 degrees
 
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  // build view matrix, model matrix, and model-view matrix
+  vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  mMat = glm::translate(glm::mat4(1.0f), glm::vec3(cubeLocX, cubeLocY, cubeLocZ));
+  mvMat = vMat * mMat;
+
+  // copy perspective and MV matrices to corresponding uniform variables
+  program.sendUniformMatrix4fv("mv_matrix", mvMat);
+  program.sendUniformMatrix4fv("proj_matrix", pMat);
+
+  // associate VBO with the corresponding vertex attribute in the vertex shader
+  vbo.value().bindVertexBuffer(0);
+  opengl::vertexAttrib(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  opengl::enableVertexAttrib(0);
+
+  // adjust OpenGL settings and draw model
+  opengl::enable(GL_DEPTH_TEST);
+  opengl::depthFunc(GL_LEQUAL);
+  opengl::drawTriangles(0, 36);
 }
 
 int main() {

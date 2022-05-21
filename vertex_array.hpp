@@ -1,5 +1,5 @@
-#ifndef LEARNOPENGLSTARTER__VERTEXARRAYOBJECT_HPP_
-#define LEARNOPENGLSTARTER__VERTEXARRAYOBJECT_HPP_
+#ifndef LEARNOPENGLSTARTER__VertexArrayObjects_HPP_
+#define LEARNOPENGLSTARTER__VertexArrayObjects_HPP_
 
 #include <GL/glew.h>
 
@@ -9,27 +9,35 @@
 namespace opengl {
 
 template <size_t NumVAOs>
-class VertexArray {
+class VertexArrayObjects {
  public:
-    VertexArray() {
-        glGenVertexArrays(vertices_.size(), vertices_.data());
-        glBindVertexArray(vertices_[0]);
-    }
+  VertexArrayObjects() {
+      glGenVertexArrays(vertices_.size(), vertices_.data());
+  }
 
-    VertexArray(VertexArray&& other) noexcept {
-        operator=(std::move(other));
-    }
-    VertexArray& operator=(VertexArray&& other) noexcept {
-        vertices_ = other.vertices_;
-        other.vertices_ = {};
-        return *this;
-    }
+  VertexArrayObjects(VertexArrayObjects&& other) noexcept {
+      operator=(std::move(other));
+  }
 
-    ~VertexArray() {
-        if (vertices_ != std::array<GLuint, NumVAOs>{}) {
-            glDeleteVertexArrays(vertices_.size(), vertices_.data());
-        }
-    }
+  VertexArrayObjects& operator=(VertexArrayObjects&& other) noexcept {
+      vertices_ = other.vertices_;
+      other.vertices_ = {};
+      return *this;
+  }
+
+  ~VertexArrayObjects() {
+      if (vertices_ != std::array<GLuint, NumVAOs>{}) {
+          glDeleteVertexArrays(vertices_.size(), vertices_.data());
+      }
+  }
+
+  void bindVertexArray(size_t idx) {
+    glBindVertexArray(vertices_.at(idx));
+  }
+
+  void generateVertexArrays() {
+    glGenVertexArrays(1, vertices_.data());
+  }
 
  private:
     std::array<GLuint, NumVAOs> vertices_;
@@ -37,4 +45,4 @@ class VertexArray {
 
 }
 
-#endif //LEARNOPENGLSTARTER__VERTEXARRAYOBJECT_HPP_
+#endif //LEARNOPENGLSTARTER__VertexArrayObjects_HPP_
