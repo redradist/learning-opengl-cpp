@@ -93,6 +93,8 @@ void display(GLFWwindow* window, double currentTime) {
   // the view matrix is computed once and used for both objects
   vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
 
+  glEnable(GL_CULL_FACE);
+
   // draw the cube (use buffer #0)
   mMat = glm::translate(glm::mat4(1.0f), glm::vec3(cubeLocX, cubeLocY, cubeLocZ));
   mvMat = vMat * mMat;
@@ -106,6 +108,7 @@ void display(GLFWwindow* window, double currentTime) {
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
+  glFrontFace(GL_CW); // the cube vertices have clockwise winding order
   glDrawArrays(GL_TRIANGLES, 0, 36);
 
   // draw the pyramid (use buffer #1)
@@ -119,6 +122,7 @@ void display(GLFWwindow* window, double currentTime) {
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
+  glFrontFace(GL_CCW); // the pyramid vertices have counter-clockwise winding order
   glDrawArrays(GL_TRIANGLES, 0, 18);
 }
 
@@ -245,6 +249,8 @@ void display(GLFWwindow* window, double currentTime) {
   // build view matrix, model matrix, and model-view matrix
   vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
 
+  opengl::enable(GL_CULL_FACE);
+
   // cube model matrix
   mMat = glm::translate(glm::mat4(1.0f), glm::vec3(cubeLocX, cubeLocY, cubeLocZ));
   mvMat = vMat * mMat;
@@ -261,6 +267,7 @@ void display(GLFWwindow* window, double currentTime) {
   // adjust OpenGL settings and draw model
   opengl::enable(GL_DEPTH_TEST);
   opengl::depthFunc(GL_LEQUAL);
+  opengl::frontFace(GL_CW); // the cube vertices have clockwise winding order
   opengl::drawTriangles(0, 36);
 
   // pyramid model matrix
@@ -279,6 +286,7 @@ void display(GLFWwindow* window, double currentTime) {
   // adjust OpenGL settings and draw model
   opengl::enable(GL_DEPTH_TEST);
   opengl::depthFunc(GL_LEQUAL);
+  opengl::frontFace(GL_CCW); // the pyramid vertices have counter-clockwise winding order
   opengl::drawTriangles(0, 18);
 }
 

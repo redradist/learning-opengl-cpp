@@ -48,6 +48,11 @@ void depthFunc(GLint flag) {
 }
 
 inline
+void frontFace(GLint flag) {
+  glFrontFace(flag);
+}
+
+inline
 void drawPoints(GLint first, GLsizei count) {
     glDrawArrays(GL_POINTS, first, count);
 }
