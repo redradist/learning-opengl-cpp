@@ -14,6 +14,7 @@ using namespace std;
 
 float cameraX, cameraY, cameraZ;
 float cubeLocX, cubeLocY, cubeLocZ;
+float cubeAngX, cubeAngY, cubeAngZ;
 
 GLuint renderingProgram;
 
@@ -47,7 +48,8 @@ void init(GLFWwindow* window) {
   renderingProgram = utils::createShaderProgram("../../shaders/vertex.glsl",
                                                 "../../shaders/fragment.glsl");
   cameraX = 0.0f; cameraY = 0.0f; cameraZ = 30.0f;
-  cubeLocX = 0.0f; cubeLocY = -2.0f; cubeLocZ = 0.0f; // shift down Y to reveal perspective
+  cubeLocX = 2.0f; cubeLocY = -5.0f; cubeLocZ = 0.0f; // shift down Y to reveal perspective
+  cubeAngX = 0.0f; cubeAngY = 0.3f; cubeAngZ = 0.0f; // angle of camera
   setupVertices();
 }
 
@@ -66,7 +68,15 @@ void display(GLFWwindow* window, double currentTime) {
   pMat = glm::perspective(1.0472f, aspect, 0.1f, 1000.0f); // 1.0472 radians = 60 degrees
 
   // build view matrix, model matrix, and model-view matrix
-  vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  glm::mat4 rMat = glm::mat4(glm::vec4( 1.0, 0.0, 0.0, 0.0 ),
+                             glm::vec4( 0.0, 1.0, 0.0, 0.0 ),
+                             glm::vec4( 0.0, 0.0, 1.0, 0.0 ),
+                             glm::vec4( 0.0, 0.0, 0.0, 1.0 ));
+  glm::mat4 tMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  rMat = glm::rotate(rMat, cubeAngX, glm::vec3(1, 0, 0));
+  rMat = glm::rotate(rMat, cubeAngY, glm::vec3(0, 1, 0));
+  rMat = glm::rotate(rMat, cubeAngZ, glm::vec3(0, 0, 1));
+  vMat = rMat * tMat;
   for (int i = 0; i < 24; ++i) {
     double tf = currentTime + i; // tf == "time factor", declared as type float
     // cube model matrix
@@ -136,6 +146,7 @@ std::optional<opengl::VertexBufferObjects<kNumVBOs>> vbo;
 
 float cameraX, cameraY, cameraZ;
 float cubeLocX, cubeLocY, cubeLocZ;
+float cubeAngX, cubeAngY, cubeAngZ;
 
 // allocate variables used in display() function, so that they won’t need to be allocated during rendering
 GLuint mvLoc, projLoc;
@@ -176,6 +187,7 @@ void init(GLFWwindow* window) {
   renderingProgram = createShaderProgram();
   cameraX = 0.0f; cameraY = 0.0f; cameraZ = 30.0f;
   cubeLocX = 0.0f; cubeLocY = -2.0f; cubeLocZ = 0.0f; // shift down Y to reveal perspective
+  cubeAngX = 0.0f; cubeAngY = 0.3f; cubeAngZ = 0.0f; // angle of camera
   setupVertices();
 }
 
@@ -194,7 +206,15 @@ void display(GLFWwindow* window, double currentTime) {
   pMat = glm::perspective(1.0472f, aspect, 0.1f, 1000.0f); // 1.0472 radians = 60 degrees
 
   // build view matrix, model matrix, and model-view matrix
-  vMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  glm::mat4 rMat = glm::mat4(glm::vec4( 1.0, 0.0, 0.0, 0.0 ),
+                             glm::vec4( 0.0, 1.0, 0.0, 0.0 ),
+                             glm::vec4( 0.0, 0.0, 1.0, 0.0 ),
+                             glm::vec4( 0.0, 0.0, 0.0, 1.0 ));
+  glm::mat4 tMat = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraX, -cameraY, -cameraZ));
+  rMat = glm::rotate(rMat, cubeAngX, glm::vec3(1, 0, 0));
+  rMat = glm::rotate(rMat, cubeAngY, glm::vec3(0, 1, 0));
+  rMat = glm::rotate(rMat, cubeAngZ, glm::vec3(0, 0, 1));
+  vMat = rMat * tMat;
 
   for (int i = 0; i < 24; ++i) {
     double tf = currentTime + i; // tf == "time factor", declared as type float
